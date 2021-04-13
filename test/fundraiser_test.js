@@ -50,8 +50,79 @@ const owner = accounts[0];
 
 	it("gets the owner", async () => {
 	const actual = await fundraiser.owner();
-	assert.equal(actual, custodian, "bios should match");
+	assert.equal(actual, owner, "bios should match");
 	});
 
 });
+
+	describe("setBeneficiary", () => {
+	const newBeneficiary = accounts[2];
+	
+	it("updated beneficiary when called by owner account", async () => {
+	
+	await fundraiser.setBeneficiary(newBeneficiary, {from: owner});
+
+	const actualBeneficiary = await fundraiser.beneficiary();
+	assert.equal(actualBeneficiary, newBeneficiary,"beneficiaries should match");
+	});
+
+	it("throws an error when called from a non-owner account",
+	async () => {
+	try 
+		{
+		await fundraiser.setBeneficiary(newBeneficiary, {from: accounts[3]});
+		assert.fail("withdraw was not restricted to owners")
+		} 
+	
+	catch(err) 
+		{
+		const expectedError = "Error"
+		const actualError = err.name;
+		assert.equal(actualError, expectedError, "should not be permitted")
+		}
+	})
+
+	describe("making donations", () => {
+		const value = web3.utils.toWei('0.0289');
+		const donor = accounts[2];
+
+		it("increases myDonationsCount", async () => {
+			const currentDonationsCount = await
+			fundraiser.myDonationsCount({from: donor}
+		);
+			await fundraiser.donate({from: donor, value});
+		
+			const newDonationsCount = await fundraiser.myDonationsCount( {from: donor});
+			assert.equal(1, newDonationsCount - currentDonationsCount,"myDonationsCount should increment by 1");
+			})
+
+		it("includes donation in myDonations", async () => {
+		await fundraiser.donate({from: donor, value});
+		const {values, dates} = await fundraiser.myDonations({from: donor}
+		);
+		assert.equal(value, values[0], "values should match"
+		);
+		assert(dates[0], "date should be present");
+		});
+
+		it("increases the totalDonations amount", async () => {
+			const currentTotalDonations = await fundraiser.totalDonations();
+			await fundraiser.donate({from: donor, value});
+			
+			const newTotalDonations = await fundraiser.totalDonations();
+			const diff = newTotalDonations - currentTotalDonations;
+			assert.equal( diff, value, "difference should match the donation value")
+			});
+		
+		it("increases donationsCount", async () => {
+			const currentDonationsCount = await fundraiser.donationsCount();
+			await fundraiser.donate({from: donor, value});
+			const newDonationsCount = await fundraiser.donationsCount();
+			assert.equal( 1, newDonationsCount - currentDonationsCount, "donationsCount should increment by 1");
+			});
+
+		});
+	});
 });
+
+
